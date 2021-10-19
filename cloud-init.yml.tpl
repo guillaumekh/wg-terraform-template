@@ -22,14 +22,22 @@ write_files:
     - content: |
         [Interface]
         PrivateKey = server_private_key
-        Address = 10.0.0.1/24
+        Address = 10.0.0.1/24, fe80::f71d:19da:c23a:b56d/64
         ListenPort = 52820
-        PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o ens5 -j MASQUERADE
-        PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o ens5 -j MASQUERADE
+        PostUp = iptables -A FORWARD -i %i -o ens5 -j ACCEPT
+        PostUp = iptables -t nat -A POSTROUTING -s 10.0.0.0/24 -o ens5 -j MASQUERADE
+        PostUp = ip6tables -A INPUT -i %i -j ACCEPT
+        PostUp = ip6tables -A FORWARD -i ens5 -o %i -j ACCEPT
+        PostUp = ip6tables -A FORWARD -i %i -o ens5 -j ACCEPT
+        PostDown = iptables -D FORWARD -i %i -o ens5 -j ACCEPT
+        PostDown = iptables -t nat -D POSTROUTING -s 10.0.0.0/24 -o ens5 -j MASQUERADE
+        PostDown = ip6tables -D INPUT -i %i -j ACCEPT
+        PostDown = ip6tables -D FORWARD -i ens5 -o %i -j ACCEPT
+        PostDown = ip6tables -D FORWARD -i %i -o ens5 -j ACCEPT
 
         [Peer]
         PublicKey = client_public_key
-        AllowedIPs = 10.0.0.2/32
+        AllowedIPs = 10.0.0.2/32, fe80::/64
       path: /etc/wireguard/wg0.conf
       owner: root:root
       permissions: '666'
@@ -46,7 +54,11 @@ runcmd:
     - [ sh, -c, 'chmod 600 /etc/wireguard/server_private_key /etc/wireguard/server_public_key' ]
     # Enable IPv4 routing
     - [ sh, -c, 'sysctl -w net.ipv4.ip_forward=1' ]
+    # Enable IPv6 routing
+    - [ sh, -c, 'sysctl -w net.ipv6.conf.all.forwarding=1' ]
     # Start Wireguard
     - [ sh, -c, 'sudo systemctl enable --now wg-quick@wg0' ]
+    # Enable Wireguard logs
+    - [ sh, -c, 'echo module wireguard +p | tee /sys/kernel/debug/dynamic_debug/control']
 
 final_message: "System provisioning is complete and took $UPTIME seconds"
