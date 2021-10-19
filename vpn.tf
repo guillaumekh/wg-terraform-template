@@ -83,7 +83,7 @@ data "template_cloudinit_config" "user_data" {
 # Create EC2 instance
 resource "aws_instance" "aws-instance" {
   ami           = data.aws_ami.latest-ubuntu-focal-fossa-lts-ami.image_id
-  instance_type = "t3a.nano"
+  instance_type = "t4g.nano"
   vpc_security_group_ids  = [ aws_security_group.security-group.id ]
   ipv6_address_count  = 1
   timeouts {
