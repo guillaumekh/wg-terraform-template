@@ -61,22 +61,18 @@ resource "aws_security_group" "security-group" {
   }
 }
 
-# Render cloud-init config file from template
-data "template_file" "cloud-init" {
-  template = file("${path.module}/cloud-init.yml.tpl")
-  # vars = {
-  # }
-}
 
 # Render a cloud-init config
-data "template_cloudinit_config" "user_data" {
+data "cloudinit_config" "user_data" {
   gzip          = true
   base64_encode = true
 
   part {
     filename     = "cloud-init.yml"
     content_type = "text/cloud-config"
-    content      = data.template_file.cloud-init.rendered
+    content      = templatefile(
+      "${path.module}/cloud-init.yml.tpl", {}
+    )
   }
 }
 
@@ -91,7 +87,7 @@ resource "aws_instance" "aws-instance" {
     update = "5m"
     delete = "5m"
   }
-  user_data_base64 = data.template_cloudinit_config.user_data.rendered
+  user_data_base64 = data.cloudinit_config.user_data.rendered
   tags = {
     Name = "VPN"
     source = "terraform"
