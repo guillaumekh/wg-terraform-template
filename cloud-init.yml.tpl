@@ -18,6 +18,8 @@ disable_root: true
 packages:
   - wireguard
 
+# IPv6 is broken. There might be some good hints there:
+# https://im.salty.fish/index.php/archives/linux-networking-shallow-dive.html
 write_files:
     - content: |
         [Interface]
