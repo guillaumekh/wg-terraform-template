@@ -81,7 +81,7 @@ resource "aws_instance" "aws-instance" {
   ami           = data.aws_ami.ubuntu-ami.image_id
   instance_type = "t4g.nano"
   vpc_security_group_ids  = [ aws_security_group.security-group.id ]
-  ipv6_address_count  = 1
+  # ipv6_address_count  = 1
   timeouts {
     create = "5m"
     update = "5m"
@@ -100,10 +100,10 @@ resource "aws_instance" "aws-instance" {
       cp client-wg0.conf $TMPDIR/client-wg0.conf;
       CLIENTPRIVATEKEY=$(cat $TMPDIR/client_private_key);
       sed -i '' "s|client_private_key|$CLIENTPRIVATEKEY|" $TMPDIR/client-wg0.conf;
-      sed -i '' "s|server_public_ip|${aws_instance.aws-instance.public_ip}|" $TMPDIR/client-wg0.conf;
+      sed -i '' "s|server_public_ip|${self.public_ip}|" $TMPDIR/client-wg0.conf;
       # Download server public key and upload client public key when possible ;
-      until scp -o StrictHostKeyChecking=no guillaume@${aws_instance.aws-instance.public_ip}:/etc/wireguard/server_public_key $TMPDIR/server_public_key ; do echo "Awaiting Wireguard server public key..."; sleep 5; done;
-      scp -o StrictHostKeyChecking=no $TMPDIR/client_public_key guillaume@${aws_instance.aws-instance.public_ip}:/tmp/;
+      until scp -o StrictHostKeyChecking=no guillaume@${self.public_ip}:/etc/wireguard/server_public_key $TMPDIR/server_public_key ; do echo "Awaiting Wireguard server public key..."; sleep 5; done;
+      scp -o StrictHostKeyChecking=no $TMPDIR/client_public_key guillaume@${self.public_ip}:/tmp/;
       # Insert server public key in WG conf file;
       SERVERPUBLICKEY=$(cat $TMPDIR/server_public_key);
       sed -i '' "s|server_public_key|$SERVERPUBLICKEY|" $TMPDIR/client-wg0.conf;
